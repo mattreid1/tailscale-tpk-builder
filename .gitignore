@@ -1,0 +1,60 @@
+# Python-generated files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+wheels/
+*.egg-info
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs (keep dist/ dir but ignore .tpk files)
+dist/*.tpk
+
+# Tailscale binaries (large files - download with ./update_tailscale.sh)
+src/bin/program/tailscale
+src/bin/program/tailscaled
+
+# Generated webui archive (built from src/webui/ during build)
+src/webui.bz2
+
+# React build output (generated from webui-src/)
+src/webui/dist/
+
+# Node.js
+webui-src/node_modules/
+
+# Type checking / linting caches
+.mypy_cache/
+.ruff_cache/
+
+# Release and update staging
+dist/SHA256SUMS
+dist/*.tar.gz
+src/sysroot/usr/local/bin/tailscale*
+
+# Private deployment configuration, logs, and identity files
+.env
+.env.*
+*.state
+*.log
+*.log*.txt
+*.key
+updater.conf

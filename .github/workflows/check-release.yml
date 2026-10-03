@@ -1,0 +1,96 @@
+name: Build Tailscale releases
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stable Tailscale version (blank = latest stable)'
+        required: false
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: tailscale-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve stable version and check release
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$REQUESTED_VERSION"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(curl -fsSL --retry 3 'https://pkgs.tailscale.com/stable/?mode=json' | jq -er .TarballsVersion)
+          fi
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VERSION" --json assets --jq '.assets[].name' | grep -qx tailscale-tos5-x86_64.tpk; then
+            echo 'build=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'build=true' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.version.outputs.build == 'true'
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        if: steps.version.outputs.build == 'true'
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        if: steps.version.outputs.build == 'true'
+        with:
+          version: '10.6.2'
+      - uses: astral-sh/setup-uv@v4
+        if: steps.version.outputs.build == 'true'
+      - name: Build and validate release
+        if: steps.version.outputs.build == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          uv sync --locked
+          pnpm --dir webui-src install --frozen-lockfile
+          ./update_tailscale.sh "$VERSION"
+          make check
+          uv run python -m unittest discover -s tests
+          uv run python build.py build -o dist/tailscale-tos5-x86_64.tpk
+          uv run python build.py verify dist/tailscale-tos5-x86_64.tpk
+          cd dist
+          sha256sum tailscale-tos5-x86_64.tpk > SHA256SUMS
+      - name: Publish verified build
+        if: steps.version.outputs.build == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "v$VERSION" >/dev/null 2>&1; then
+            gh release create "v$VERSION" --target "$GITHUB_SHA" --draft --title "Tailscale $VERSION for TerraMaster TOS 5" --notes "Official stable Tailscale binaries, packaged for TOS 5.1.12+ on x86_64. Includes the custom web interface. Download the TPK for App Center manual installation, or use scripts/tnas-update.sh for terminal updates. SHA256SUMS verifies the package."
+          fi
+          gh release upload "v$VERSION" dist/tailscale-tos5-x86_64.tpk dist/SHA256SUMS --clobber
+          gh release edit "v$VERSION" --draft=false --latest
+      - name: Keep schedule active and record stable version
+        # Monthly activity prevents public-repository schedules expiring after inactivity.
+        if: github.event_name != 'workflow_dispatch' || inputs.version == ''
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          mkdir -p .github
+          printf '%s\n' "$(date -u +%Y-%m) $VERSION" > .github/release-check.txt
+          git add .github/release-check.txt
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m "chore(release): record stable version check for $VERSION"
+            git push
+          fi

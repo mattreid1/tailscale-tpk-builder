@@ -1,0 +1,72 @@
+[de-de]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[en-us]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[es-es]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[fr-fr]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[hu-hu]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[it-it]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[ja-jp]
+name = "Tailscale"
+auth = "Tailscale"
+version = "v0.0.1.0"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[ko-kr]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[pl-pl]
+name = "Tailscale"
+auth = "Tailscale"
+version = "v0.0.1.0"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[pt-pt]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[ru-ru]
+name = "Tailscale"
+auth = "Tailscale"
+version = "v0.0.1.0"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[tr-tr]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[zh-cn]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."
+
+[zh-hk]
+name = "Tailscale"
+auth = "Tailscale"
+descript = "Tailscale lets you easily manage access to private resources, quickly SSH into devices on your network, and work securely from anywhere in the world."

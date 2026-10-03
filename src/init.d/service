@@ -1,0 +1,155 @@
+#!/bin/bash
+
+VERSION="1.102.4.0"
+MOD_NAME=Tailscale
+
+export depend=(
+""
+ )
+. /usr/local/${MOD_NAME}/functions/dependapps.sh
+
+DAEMON=tailscaled
+
+APP_ROOT=$(dirname $(dirname $(readlink -f $0)))
+BINDIR=$APP_ROOT/bin/program
+RUNDIR=/usr/local/${MOD_NAME}/bin
+
+service_prepare(){ 
+
+if [ ! -f $MODCONFIGPATH/tailscaled.defaults ];then
+cp -af $BINDIR/systemd/tailscaled.defaults $MODCONFIGPATH
+fi
+
+source $MODCONFIGPATH/tailscaled.defaults
+SWITCHES="--socket=/run/tailscale/tailscaled.sock --port=${PORT} $FLAGS"
+
+if [ ! -L /opt/var/lib/tailscale ];then
+rm -rf /opt/var/lib/tailscale > /dev/null 2>&1
+ln -sf $MODCONFIGPATH /opt/var/lib/tailscale
+fi
+
+# Tailscale manages DNS according to its stored --accept-dns preference.
+# TOS 5 does not have systemd-resolved; never rewrite the NAS resolver here.
+
+
+}
+
+  _findPID(){
+  
+  PID=`ps axf | grep "$DAEMON" | grep -v grep | awk '{print $1}'` > /dev/null 2>&1
+  
+  }
+
+
+start(){
+	init_config_folder
+	get_vol_name >> $LOGFILE 2>&1
+	get_main_volume >> $LOGFILE 2>&1
+	init_cert >> $LOGFILE 2>&1
+	#AddUser $USER >> $LOGFILE 2>&1
+	AddConfigFolder >> $LOGFILE 2>&1
+	service_prepare >> $LOGFILE 2>&1
+
+  
+    echo -n "Starting $MOD_NAME: "
+	_findPID
+	
+		if [[ -n "$PID" ]]; then
+			echo "${MOD_NAME} (pid $PID) is running"
+		else
+		rm -f $RUNDIR/${MOD_NAME}.pid
+		start-stop-daemon --start --make-pidfile --pidfile $RUNDIR/${MOD_NAME}.pid \
+			    -b --chdir $BINDIR \
+				--startas /bin/bash -- -c "exec ./$DAEMON $SWITCHES	>> $LOGFILE 2>&1"		
+		fi
+		$BINDIR/tailscale up >> $LOGFILE 2>&1 &
+}
+
+  stop(){
+    echo -n "Stopping ${MOD_NAME} "
+	_findPID
+	
+		if [[ -n "$PID" ]]; then
+	echo $PID > $RUNDIR/${MOD_NAME}.pid
+   $BINDIR/$DAEMON --cleanup > /dev/null 2>&1
+   start-stop-daemon --stop --pidfile $RUNDIR/${MOD_NAME}.pid \
+			    --oknodo --retry 30
+				echo "OK!" && rm -f $RUNDIR/${MOD_NAME}.pid
+		else
+			echo "${MOD_NAME} is not running" && rm -f $RUNDIR/${MOD_NAME}.pid
+		fi
+	rm -f /opt/var/lib/tailscale
+	
+
+}
+
+inst_version(){
+
+echo "installed version is $($BINDIR/tailscale version | head -1)"
+
+}
+	  
+case "$1" in
+
+	start)
+	start
+	;;
+	
+	stop)
+	stop
+	;;
+	
+  reload)
+    echo -n "Restarting ${MOD_NAME}: "
+    stop
+	sleep 5
+	start
+    echo "ok."
+    ;;
+	status)
+	_findPID
+	
+	if [[ -n "$PID" ]]; then
+			echo "${MOD_NAME} (pid $PID) is running."
+		else
+			echo "${MOD_NAME} is stopped."
+		fi
+	;;
+	status_autostart)
+	if [ -f /etc/app.d/${MOD_NAME} ]; then
+	echo "Autostart on boot is Enabled"
+	else
+	echo "Autostart on boot is Disabled"
+	fi
+  ;;
+	     enable_autostart)
+    touch /etc/app.d/${MOD_NAME}
+	echo "...Enabled"
+  ;;
+      disable_autostart)
+    rm -f /etc/app.d/${MOD_NAME}
+	echo "...Disabled"
+;;
+      remove)
+	  stop
+    rm -rf /usr/local/${MOD_NAME}/config/*
+    start
+;;
+      restore_desktop)
+    tar zxfp /usr/local/${MOD_NAME}/bin/desktop.tgz -C /home/admin/desktop
+	echo "Done! Desktop icon restored"
+
+;;
+inst_version)
+inst_version
+;;
+dep_check)
+	checkdep
+;;
+  *)
+    echo "Usage: `basename $0` {start|stop|remove_config|reload|status|status_autostart|enable_autostart|disable_autostart}"
+    exit 1
+    ;;
+esac
+
+exit $?
